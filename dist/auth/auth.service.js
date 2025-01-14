@@ -11,11 +11,12 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AuthService = void 0;
 const common_1 = require("@nestjs/common");
-const supabase_js_1 = require("@supabase/supabase-js");
 const auth_util_1 = require("./auth.util");
+const supabase_service_1 = require("../supabase/supabase.service");
 let AuthService = class AuthService {
-    constructor() {
-        this.supabase = (0, supabase_js_1.createClient)(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
+    constructor(supabaseService) {
+        this.supabaseService = supabaseService;
+        this.supabase = this.supabaseService.getClient();
     }
     async checkEmailAvailability(email) {
         const { data, error } = await this.supabase
@@ -113,7 +114,8 @@ let AuthService = class AuthService {
             message: 'Login successful',
             data: {
                 user: {
-                    id: data.user.id,
+                    id: user.id,
+                    supabaseUserId: data.user.id,
                     email: data.user.email,
                     ethereumAddress: user.ethereumAddress,
                     firstName: user.firstName,
@@ -127,5 +129,5 @@ let AuthService = class AuthService {
 exports.AuthService = AuthService;
 exports.AuthService = AuthService = __decorate([
     (0, common_1.Injectable)(),
-    __metadata("design:paramtypes", [])
+    __metadata("design:paramtypes", [supabase_service_1.SupabaseService])
 ], AuthService);

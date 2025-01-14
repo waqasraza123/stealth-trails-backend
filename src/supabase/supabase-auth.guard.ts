@@ -1,5 +1,5 @@
 import { Injectable, CanActivate, ExecutionContext, UnauthorizedException } from '@nestjs/common';
-import { AuthService } from './auth.service';
+import { AuthService } from '../auth/auth.service';
 
 @Injectable()
 export class SupabaseAuthGuard implements CanActivate {
@@ -20,6 +20,11 @@ export class SupabaseAuthGuard implements CanActivate {
     }
 
     const user = await this.authService.validateToken(token);
+
+    if (!user) {
+      throw new UnauthorizedException('Invalid or expired token');
+    }
+
     request.user = user;
     return true;
   }

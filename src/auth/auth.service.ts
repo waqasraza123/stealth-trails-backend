@@ -8,16 +8,14 @@ import {
 import { createClient } from '@supabase/supabase-js';
 import { CustomJsonResponse } from '../types/CustomJsonResponse';
 import { generateEthereumAddress } from './auth.util';
+import { SupabaseService } from '../supabase/supabase.service';
 
 @Injectable()
 export class AuthService {
   private supabase;
 
-  constructor() {
-    this.supabase = createClient(
-      process.env.SUPABASE_URL!,
-      process.env.SUPABASE_ANON_KEY!
-    );
+  constructor(private readonly supabaseService: SupabaseService) {
+    this.supabase = this.supabaseService.getClient();
   }
 
   private async checkEmailAvailability(email: string) {
@@ -144,7 +142,8 @@ export class AuthService {
       message: 'Login successful',
       data: {
         user: {
-          id: data.user.id,
+          id: user.id,
+          supabaseUserId: data.user.id,
           email: data.user.email,
           ethereumAddress: user.ethereumAddress,
           firstName: user.firstName,
