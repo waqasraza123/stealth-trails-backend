@@ -51,9 +51,11 @@ export class DepositService {
         };
         const txResponse = await wallet.sendTransaction(transaction);
         console.log(`Transaction Hash: ${txResponse.hash}`);
-      } else if (asset === 'USD Coin (USDC)') {
-        // For USDC or other ERC-20 tokens, you would call the appropriate smart contract function here
+      } else if (asset === 'usdc') {
         console.log('Transferring USDC (ERC-20)');
+      }
+      else if (asset === 'usdt') {
+        console.log('Transferring USDT (ERC-20)');
       } else {
         console.log('Asset type not supported for deposit');
       }

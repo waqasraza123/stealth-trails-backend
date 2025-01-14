@@ -12,6 +12,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.AuthService = void 0;
 const common_1 = require("@nestjs/common");
 const supabase_js_1 = require("@supabase/supabase-js");
+const auth_util_1 = require("./auth.util");
 let AuthService = class AuthService {
     constructor() {
         this.supabase = (0, supabase_js_1.createClient)(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
@@ -27,6 +28,17 @@ let AuthService = class AuthService {
         }
         return data;
     }
+    async getUserFromDatabaseById(userId) {
+        const { data, error } = await this.supabase
+            .from('User')
+            .select('*')
+            .eq('supabaseUserId', userId)
+            .maybeSingle();
+        if (error) {
+            throw new common_1.InternalServerErrorException(`Error retrieving user by ID: ${error.message}`);
+        }
+        return data;
+    }
     async registerUserInSupabaseAuth(email, password) {
         const { data, error } = await this.supabase.auth.signUp({
             email,
@@ -37,7 +49,7 @@ let AuthService = class AuthService {
         }
         return data;
     }
-    async saveUserToDatabase(firstName, lastName, email, userId) {
+    async saveUserToDatabase(firstName, lastName, email, userId, ethereumAccountAddress) {
         const { error } = await this.supabase
             .from('User')
             .insert([
@@ -46,6 +58,7 @@ let AuthService = class AuthService {
                 lastName,
                 email,
                 supabaseUserId: userId,
+                ethereumAddress: ethereumAccountAddress
             },
         ]);
         if (error) {
@@ -68,10 +81,11 @@ let AuthService = class AuthService {
         if (!userData?.user) {
             throw new common_1.InternalServerErrorException('Failed to create user in Supabase Auth');
         }
-        await this.saveUserToDatabase(firstName, lastName, email, userData.user.id);
+        const { address, privateKey } = (0, auth_util_1.generateEthereumAddress)();
+        await this.saveUserToDatabase(firstName, lastName, email, userData.user.id, address);
         return {
             status: 'success',
-            message: 'User created successfully',
+            message: 'Please save the private key, you wont be able to get it from anywhere ever again. We will not store it. If you lose it, you will lose access to your account.',
             data: {
                 user: {
                     id: userData.user.id,
@@ -79,6 +93,8 @@ let AuthService = class AuthService {
                     created_at: userData.user.created_at,
                     firstName,
                     lastName,
+                    address,
+                    privateKey
                 },
             },
         };
@@ -91,6 +107,7 @@ let AuthService = class AuthService {
         if (error) {
             throw new common_1.UnauthorizedException('Invalid credentials');
         }
+        const user = await this.getUserFromDatabaseById(data.user.id);
         return {
             status: 'success',
             message: 'Login successful',
@@ -98,6 +115,9 @@ let AuthService = class AuthService {
                 user: {
                     id: data.user.id,
                     email: data.user.email,
+                    ethereumAddress: user.ethereumAddress,
+                    firstName: user.firstName,
+                    lastName: user.lastName
                 },
                 token: data.session?.access_token,
             },

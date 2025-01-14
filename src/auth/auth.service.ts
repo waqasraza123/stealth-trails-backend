@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { createClient } from '@supabase/supabase-js';
 import { CustomJsonResponse } from '../types/CustomJsonResponse';
+import { generateEthereumAddress } from './auth.util';
 
 @Injectable()
 export class AuthService {
@@ -33,6 +34,21 @@ export class AuthService {
     return data;
   }
 
+  private async getUserFromDatabaseById(userId: string) {
+    const { data, error } = await this.supabase
+      .from('User')
+      .select('*')
+      .eq('supabaseUserId', userId)
+      .maybeSingle();
+  
+    if (error) {
+      throw new InternalServerErrorException(`Error retrieving user by ID: ${error.message}`);
+    }
+  
+    return data;
+  }
+  
+
   private async registerUserInSupabaseAuth(email: string, password: string) {
     const { data, error } = await this.supabase.auth.signUp({
       email,
@@ -46,7 +62,7 @@ export class AuthService {
     return data;
   }
 
-  private async saveUserToDatabase(firstName: string, lastName: string, email: string, userId: string) {
+  private async saveUserToDatabase(firstName: string, lastName: string, email: string, userId: string, ethereumAccountAddress: string) {
     const { error } = await this.supabase
       .from('User')
       .insert([
@@ -55,6 +71,7 @@ export class AuthService {
           lastName,
           email,
           supabaseUserId: userId,
+          ethereumAddress: ethereumAccountAddress
         },
       ]);
 
@@ -77,22 +94,24 @@ export class AuthService {
 
   async signUp(firstName: string, lastName: string, email: string, password: string): Promise<CustomJsonResponse> {
     const existingUser = await this.checkEmailAvailability(email);
-
+  
     if (existingUser) {
       throw new ConflictException('Email is already in use');
     }
-
+  
     const userData = await this.registerUserInSupabaseAuth(email, password);
-
+  
     if (!userData?.user) {
       throw new InternalServerErrorException('Failed to create user in Supabase Auth');
     }
-
-    await this.saveUserToDatabase(firstName, lastName, email, userData.user.id);
-
+  
+    const {address, privateKey} = generateEthereumAddress();
+  
+    await this.saveUserToDatabase(firstName, lastName, email, userData.user.id, address);
+  
     return {
       status: 'success',
-      message: 'User created successfully',
+      message: 'Please save the private key, you wont be able to get it from anywhere ever again. We will not store it. If you lose it, you will lose access to your account.',
       data: {
         user: {
           id: userData.user.id,
@@ -100,10 +119,13 @@ export class AuthService {
           created_at: userData.user.created_at,
           firstName,
           lastName,
+          address,
+          privateKey 
         },
       },
     };
   }
+  
 
   async login(email: string, password: string): Promise<CustomJsonResponse> {
     const { data, error } = await this.supabase.auth.signInWithPassword({
@@ -115,6 +137,8 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
+    const user = await this.getUserFromDatabaseById(data.user.id);
+
     return {
       status: 'success',
       message: 'Login successful',
@@ -122,6 +146,9 @@ export class AuthService {
         user: {
           id: data.user.id,
           email: data.user.email,
+          ethereumAddress: user.ethereumAddress,
+          firstName: user.firstName,
+          lastName: user.lastName
         },
         token: data.session?.access_token,
       },

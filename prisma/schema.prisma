@@ -14,5 +14,6 @@ model User {
   lastName  String
   email     String @unique
   supabaseUserId  String
+  ethereumAddress  String? @default("")
   createdAt DateTime @default(now())
 }
