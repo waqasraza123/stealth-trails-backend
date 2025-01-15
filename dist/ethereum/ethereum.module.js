@@ -9,12 +9,13 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.EthereumModule = void 0;
 const common_1 = require("@nestjs/common");
 const ethereum_service_1 = require("./ethereum.service");
+const prisma_service_1 = require("../prisma/prisma.service");
 let EthereumModule = class EthereumModule {
 };
 exports.EthereumModule = EthereumModule;
 exports.EthereumModule = EthereumModule = __decorate([
     (0, common_1.Module)({
         controllers: [],
-        providers: [ethereum_service_1.EthereumService],
+        providers: [ethereum_service_1.EthereumService, prisma_service_1.PrismaService],
     })
 ], EthereumModule);

@@ -12,11 +12,13 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.EthereumService = void 0;
 const common_1 = require("@nestjs/common");
 const ethers_1 = require("ethers");
+const prisma_service_1 = require("../prisma/prisma.service");
 let EthereumService = class EthereumService {
-    constructor() {
+    constructor(prismaService) {
+        this.prismaService = prismaService;
         this.stakingContractAddress = '0x5FbDB2315678afecb367f032d93F642f64180aa3';
         this.stakingContractABI = [
-            "event PoolCreated(uint256 poolId, uint256 rewardRate)",
+            "event PoolCreated(uint256 poolId, uint256 rewardRate, uint256 externalPoolId)",
         ];
         this.provider = new ethers_1.ethers.providers.JsonRpcProvider('http://localhost:8545');
         this.stakingContract = new ethers_1.ethers.Contract(this.stakingContractAddress, this.stakingContractABI, this.provider);
@@ -25,9 +27,21 @@ let EthereumService = class EthereumService {
         this.listenToEvents();
     }
     listenToEvents() {
-        this.stakingContract.on('PoolCreated', (poolId, rewardRate, event) => {
+        this.stakingContract.on('PoolCreated', async (poolId, rewardRate, externalPoolId) => {
             console.log(`New pool created: ID=${poolId.toString()}, Reward Rate=${rewardRate.toString()}`);
-            console.log('Event Details:', event);
+            console.log(`External Pool ID: ${externalPoolId.toString()}`);
+            try {
+                await this.prismaService.stakingPool.update({
+                    where: { id: externalPoolId.toNumber() },
+                    data: {
+                        blockchainPoolId: poolId.toNumber(),
+                    },
+                });
+                console.log(`Database updated with blockchainPoolId: ${poolId.toString()}`);
+            }
+            catch (error) {
+                console.error('Error updating the database:', error);
+            }
         });
         console.log('Listening for PoolCreated events...');
     }
@@ -35,5 +49,5 @@ let EthereumService = class EthereumService {
 exports.EthereumService = EthereumService;
 exports.EthereumService = EthereumService = __decorate([
     (0, common_1.Injectable)(),
-    __metadata("design:paramtypes", [])
+    __metadata("design:paramtypes", [prisma_service_1.PrismaService])
 ], EthereumService);

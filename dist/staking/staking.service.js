@@ -31,15 +31,12 @@ let StakingService = class StakingService {
         this.stakingContract = new ethers_1.ethers.Contract(stakingContractAddress, stakingAbi, this.provider.getSigner());
     }
     async createPool(rewardRate) {
-        //create the pool in database.
         const stakingPool = await this.prismaService.stakingPool.create({
             data: {
                 rewardRate: rewardRate,
                 poolStatus: "paused",
             },
         });
-        console.log("pooool created");
-        console.log(stakingPool);
         const tx = await this.stakingContract.createPool(rewardRate, stakingPool.id);
         return await tx.wait();
     }
