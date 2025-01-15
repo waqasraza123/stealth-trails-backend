@@ -6,18 +6,15 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.AppModule = void 0;
+exports.EthereumModule = void 0;
 const common_1 = require("@nestjs/common");
-const auth_module_1 = require("./auth/auth.module");
-const deposit_module_1 = require("./deposit/deposit.module");
-const user_module_1 = require("./user/user.module");
-const staking_module_1 = require("./staking/staking.module");
-const ethereum_module_1 = require("./ethereum/ethereum.module");
-let AppModule = class AppModule {
+const ethereum_service_1 = require("./ethereum.service");
+let EthereumModule = class EthereumModule {
 };
-exports.AppModule = AppModule;
-exports.AppModule = AppModule = __decorate([
+exports.EthereumModule = EthereumModule;
+exports.EthereumModule = EthereumModule = __decorate([
     (0, common_1.Module)({
-        imports: [auth_module_1.AuthModule, deposit_module_1.DepositModule, user_module_1.UserModule, staking_module_1.StakingPoolModule, ethereum_module_1.EthereumModule],
+        controllers: [],
+        providers: [ethereum_service_1.EthereumService],
     })
-], AppModule);
+], EthereumModule);

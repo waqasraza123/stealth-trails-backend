@@ -6,18 +6,17 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.AppModule = void 0;
+exports.StakingPoolModule = void 0;
 const common_1 = require("@nestjs/common");
-const auth_module_1 = require("./auth/auth.module");
-const deposit_module_1 = require("./deposit/deposit.module");
-const user_module_1 = require("./user/user.module");
-const staking_module_1 = require("./staking/staking.module");
-const ethereum_module_1 = require("./ethereum/ethereum.module");
-let AppModule = class AppModule {
+const staking_controller_1 = require("./staking.controller");
+const staking_service_1 = require("./staking.service");
+const prisma_service_1 = require("../prisma/prisma.service");
+let StakingPoolModule = class StakingPoolModule {
 };
-exports.AppModule = AppModule;
-exports.AppModule = AppModule = __decorate([
+exports.StakingPoolModule = StakingPoolModule;
+exports.StakingPoolModule = StakingPoolModule = __decorate([
     (0, common_1.Module)({
-        imports: [auth_module_1.AuthModule, deposit_module_1.DepositModule, user_module_1.UserModule, staking_module_1.StakingPoolModule, ethereum_module_1.EthereumModule],
+        controllers: [staking_controller_1.StakingController],
+        providers: [staking_service_1.StakingService, prisma_service_1.PrismaService],
     })
-], AppModule);
+], StakingPoolModule);

@@ -17,3 +17,22 @@ model User {
   ethereumAddress  String? @default("")
   createdAt DateTime @default(now())
 }
+
+model StakingPool {
+  id                Int      @id @default(autoincrement())
+  blockchainPoolId  Int?     @unique
+  rewardRate        Int
+  totalStakedAmount BigInt   @default(0)
+  totalRewardsPaid  BigInt   @default(0)
+  poolStatus        PoolStatus @default(disabled)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+enum PoolStatus {
+  active
+  disabled
+  paused
+  closed
+  completed
+}

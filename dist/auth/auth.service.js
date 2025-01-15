@@ -74,6 +74,22 @@ let AuthService = class AuthService {
         return data.user;
     }
     async signUp(firstName, lastName, email, password) {
+        //TODO delete
+        // return {
+        //   "status": "success",
+        //   "message": "Please save the private key, you wont be able to get it from anywhere ever again. We will not store it. If you lose it, you will lose access to your account.",
+        //   "data": {
+        //       "user": {
+        //           "id": "3b3bd8a2-3ef3-456b-848b-2aafd43e62a2",
+        //           "email": "xorep36269@fenxz.com",
+        //           "created_at": "2025-01-14T16:19:52.525812Z",
+        //           "firstName": "some",
+        //           "lastName": "thing",
+        //           "address": "0x2EA1A9b12F847c74Dc3B0eE5b36FE7AF9D696Eac",
+        //           "privateKey": "0x826195a2caf4dc5fd1ff3990ede37564b7ab168601b4a01d95ad98c8c6e0ce0d"
+        //       }
+        //   }
+        // }
         const existingUser = await this.checkEmailAvailability(email);
         if (existingUser) {
             throw new common_1.ConflictException('Email is already in use');

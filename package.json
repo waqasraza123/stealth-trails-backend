@@ -32,6 +32,7 @@
   "devDependencies": {
     "@nestjs/cli": "^10.4.9",
     "@nestjs/schematics": "^10.2.3",
+    "@nomicfoundation/hardhat-ignition": "^0.15.9",
     "@nomiclabs/hardhat-ethers": "^2.2.3",
     "@types/bcryptjs": "^2.4.6",
     "eslint": "^9.18.0",
