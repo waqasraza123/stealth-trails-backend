@@ -10,6 +10,7 @@ export class EthereumService implements OnModuleInit {
   private readonly stakingContractAddress = '0x5FbDB2315678afecb367f032d93F642f64180aa3';
   private readonly stakingContractABI = [
     "event PoolCreated(uint256 poolId, uint256 rewardRate, uint256 externalPoolId)",
+    "event Deposited(address indexed user, uint256 poolId, uint256 amount)",
   ];
 
   constructor(private readonly prismaService: PrismaService) {
@@ -27,13 +28,14 @@ export class EthereumService implements OnModuleInit {
   }
 
   private listenToEvents() {
+    
     this.stakingContract.on('PoolCreated', async (poolId, rewardRate, externalPoolId) => {
       console.log(`New pool created: ID=${poolId.toString()}, Reward Rate=${rewardRate.toString()}`);
       console.log(`External Pool ID: ${externalPoolId.toString()}`);
 
       try {
         await this.prismaService.stakingPool.update({
-          where: { id: externalPoolId.toNumber() },
+          where: { id: externalPoolId.toNumber() }, 
           data: {
             blockchainPoolId: poolId.toNumber(),
           },
@@ -44,6 +46,10 @@ export class EthereumService implements OnModuleInit {
       }
     });
 
-    console.log('Listening for PoolCreated events...');
+    this.stakingContract.on('Deposited', async (userAddress, poolId, amount) => {
+      console.log(`New deposit: User ${userAddress}, Pool ID: ${poolId}, Amount: ${amount.toString()}`);
+    });
+
+    console.log('Listening for PoolCreated and Deposited events...');
   }
 }

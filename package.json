@@ -1,5 +1,5 @@
 {
-  "name": "blockchain-bank",
+  "name": "stealthtrails-nest",
   "version": "1.0.0",
   "description": "NestJS Backend for Blockchain-Based Bank",
   "main": "src/main.ts",

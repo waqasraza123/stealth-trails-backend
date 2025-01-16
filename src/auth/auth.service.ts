@@ -5,7 +5,6 @@ import {
   InternalServerErrorException,
   UnauthorizedException,
 } from '@nestjs/common';
-import { createClient } from '@supabase/supabase-js';
 import { CustomJsonResponse } from '../types/CustomJsonResponse';
 import { generateEthereumAddress } from './auth.util';
 import { SupabaseService } from '../supabase/supabase.service';
@@ -32,11 +31,11 @@ export class AuthService {
     return data;
   }
 
-  private async getUserFromDatabaseById(userId: string) {
+  public async getUserFromDatabaseById(supabaseUserId: string) {
     const { data, error } = await this.supabase
       .from('User')
       .select('*')
-      .eq('supabaseUserId', userId)
+      .eq('supabaseUserId', supabaseUserId)
       .maybeSingle();
   
     if (error) {
@@ -82,6 +81,7 @@ export class AuthService {
 
   async validateToken(token: string): Promise<any> {
     const { data, error } = await this.supabase.auth.getUser(token);
+    console.log(error);
 
     if (error) {
       throw new UnauthorizedException('Invalid or expired token');
