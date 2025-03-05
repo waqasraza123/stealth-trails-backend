@@ -5,7 +5,7 @@ import { CustomJsonResponse } from '../types/CustomJsonResponse';
 
 @Controller('staking')
 export class StakingController {
-  constructor(private readonly stakingService: StakingService) {}
+  constructor(private readonly stakingService: StakingService) { }
 
   @Post('create-pool')
   async createPool(@Body() body: { rewardRate: number }) {
@@ -15,7 +15,7 @@ export class StakingController {
   @UseGuards(SupabaseAuthGuard)
   @Post('deposit')
   async deposit(@Req() req: any, @Body() body: { poolId: number; amount: string }): Promise<CustomJsonResponse> {
-    const supabaseUserId  = req.user.id;
+    const supabaseUserId = req.user.id;
     return this.stakingService.deposit(body.poolId, body.amount, supabaseUserId);
   }
 
