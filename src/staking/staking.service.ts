@@ -227,8 +227,18 @@ export class StakingService {
 
   async getStakedBalance(address: string, databasePoolId: number): Promise<CustomJsonResponse> {
     try {
+      const poolId = Number(databasePoolId);
+
+      if (isNaN(poolId)) {
+        return {
+          status: "failed",
+          message: `Invalid pool ID provided: ${databasePoolId}`,
+          data: null,
+        };
+      }
+
       const stakingPool = await this.prismaService.stakingPool.findUnique({
-        where: { id: databasePoolId },
+        where: { id: poolId },
         select: { blockchainPoolId: true },
       });
 
@@ -256,17 +266,27 @@ export class StakingService {
     }
   }
 
-  async getPendingReward(address: string, databasePoolId: number): Promise<CustomJsonResponse> {
+  async getPendingReward(address: string, databasePoolId: any): Promise<CustomJsonResponse> {
     try {
+      const poolId = Number(databasePoolId);
+
+      if (isNaN(poolId)) {
+        return {
+          status: "failed",
+          message: `Invalid pool ID provided: ${databasePoolId}`,
+          data: null,
+        };
+      }
+
       const stakingPool = await this.prismaService.stakingPool.findUnique({
-        where: { id: databasePoolId },
+        where: { id: poolId },
         select: { blockchainPoolId: true },
       });
 
       if (!stakingPool) {
         return {
           status: "failed",
-          message: `Staking pool with ID ${databasePoolId} not found`,
+          message: `Staking pool with ID ${poolId} not found`,
           data: null,
         };
       }
@@ -287,17 +307,27 @@ export class StakingService {
     }
   }
 
-  async getTotalStaked(databasePoolId: number): Promise<CustomJsonResponse> {
+  async getTotalStaked(databasePoolId: any): Promise<CustomJsonResponse> {
     try {
+      const poolId = Number(databasePoolId);
+
+      if (isNaN(poolId)) {
+        return {
+          status: "failed",
+          message: `Invalid pool ID provided: ${databasePoolId}`,
+          data: null,
+        };
+      }
+
       const stakingPool = await this.prismaService.stakingPool.findUnique({
-        where: { id: databasePoolId },
+        where: { id: poolId },
         select: { blockchainPoolId: true },
       });
 
       if (!stakingPool) {
         return {
           status: "failed",
-          message: `Staking pool with ID ${databasePoolId} not found`,
+          message: `Staking pool with ID ${poolId} not found`,
           data: null,
         };
       }
@@ -317,4 +347,5 @@ export class StakingService {
       };
     }
   }
+
 }
