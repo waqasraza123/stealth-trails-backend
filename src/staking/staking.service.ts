@@ -3,28 +3,29 @@ import { ethers } from 'ethers';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthService } from '../auth/auth.service';
 import { CustomJsonResponse } from '../types/CustomJsonResponse';
+import stakingAbi from '../abis/staking.abi.json';
 
 @Injectable()
 export class StakingService {
   private provider: ethers.providers.JsonRpcProvider;
   private stakingContract: ethers.Contract;
 
-  constructor(private readonly prismaService: PrismaService, private readonly authService: AuthService) {
-    this.provider = new ethers.providers.JsonRpcProvider('http://localhost:8545');
+  constructor(
+    private readonly prismaService: PrismaService,
+    private readonly authService: AuthService
+  ) {
+    this.provider = new ethers.providers.JsonRpcProvider(process.env.RPC_URL);
 
-    const stakingContractAddress = '0x5FbDB2315678afecb367f032d93F642f64180aa3';
-    const stakingAbi = [
-      "function createPool(uint256 _rewardRate, uint256 externalPoolId) external",
-      "function deposit(uint256 poolId, uint256 amount) external payable",
-      "function withdraw(uint256 poolId, uint256 _amount) external",
-      "function claimReward(uint256 poolId) external",
-      "function emergencyWithdraw(uint256 poolId) external",
-      "function getStakedBalance(address _user, uint256 poolId) external view returns (uint256)",
-      "function getPendingReward(address _user, uint256 poolId) external view returns (uint256)",
-      "function getTotalStaked(uint256 poolId) external view returns (uint256)"
-    ];
+    if (!process.env.STAKING_CONTRACT_ADDRESS || !process.env.ETHEREUM_PRIVATE_KEY) {
+      throw new Error('Missing STAKING_CONTRACT_ADDRESS or PRIVATE_KEY');
+    }
 
-    this.stakingContract = new ethers.Contract(stakingContractAddress, stakingAbi, this.provider.getSigner());
+    const wallet = new ethers.Wallet(process.env.ETHEREUM_PRIVATE_KEY, this.provider);
+    this.stakingContract = new ethers.Contract(
+      process.env.STAKING_CONTRACT_ADDRESS,
+      stakingAbi,
+      wallet
+    );
   }
 
   async createPool(rewardRate: number): Promise<CustomJsonResponse> {

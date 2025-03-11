@@ -1,0 +1,10 @@
+[
+    "function createPool(uint256 _rewardRate, uint256 externalPoolId) external",
+    "function deposit(uint256 poolId, uint256 amount) external payable",
+    "function withdraw(uint256 poolId, uint256 _amount) external",
+    "function claimReward(uint256 poolId) external",
+    "function emergencyWithdraw(uint256 poolId) external",
+    "function getStakedBalance(address _user, uint256 poolId) external view returns (uint256)",
+    "function getPendingReward(address _user, uint256 poolId) external view returns (uint256)",
+    "function getTotalStaked(uint256 poolId) external view returns (uint256)"
+]
