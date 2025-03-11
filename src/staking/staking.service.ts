@@ -2,8 +2,15 @@ import { Injectable } from '@nestjs/common';
 import { ethers } from 'ethers';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthService } from '../auth/auth.service';
-import { CustomJsonResponse } from '../types/CustomJsonResponse';
 import stakingAbi from '../abis/staking.abi.json';
+import { createPool } from './methods/createPool';
+import { deposit } from './methods/deposit';
+import { withdraw } from './methods/withdraw';
+import { claimReward } from './methods/claimReward';
+import { emergencyWithdraw } from './methods/emergencyWithdraw';
+import { getStakedBalance } from './methods/getStakedBalance';
+import { getPendingReward } from './methods/getPendingReward';
+import { getTotalStaked } from './methods/getTotalStaked';
 
 @Injectable()
 export class StakingService {
@@ -28,325 +35,35 @@ export class StakingService {
     );
   }
 
-  async createPool(rewardRate: number): Promise<CustomJsonResponse> {
-    try {
-      const stakingPool = await this.prismaService.stakingPool.create({
-        data: {
-          rewardRate,
-          poolStatus: "paused",
-        },
-      });
-
-      const tx = await this.stakingContract.createPool(rewardRate, stakingPool.id);
-      const receipt = await tx.wait();
-
-      return {
-        status: "success",
-        message: 'Pool created successfully',
-        data: { transactionHash: receipt.transactionHash },
-      };
-    } catch (error: any) {
-      return {
-        status: "failed",
-        message: 'Error creating pool',
-        error: error.message,
-      };
-    }
+  createPool(rewardRate: number) {
+    return createPool(this.stakingContract, this.prismaService, rewardRate);
   }
 
-  async deposit(poolId: number, amount: string, supabaseUserId: string): Promise<CustomJsonResponse> {
-    try {
-      const convertedAmount = ethers.utils.parseUnits(amount, 18);
-      const user = await this.authService.getUserFromDatabaseById(supabaseUserId);
-
-      const stakingPool = await this.prismaService.stakingPool.findUnique({
-        where: { id: poolId },
-        select: { blockchainPoolId: true },
-      });
-
-      if (!stakingPool) {
-        return {
-          status: 'failed',
-          message: `Staking pool with ID ${poolId} not found`,
-          data: null,
-        };
-      }
-
-      const blockchainPoolId = stakingPool.blockchainPoolId;
-
-      const provisionalDeposit = await this.prismaService.poolDeposit.create({
-        data: {
-          stakingPoolId: poolId,
-          userId: user.id,
-          amountStaked: parseFloat(amount),
-          status: 'pending',
-          transactionHash: '',
-        },
-      });
-
-      const tx = await this.stakingContract.deposit(blockchainPoolId, convertedAmount);
-      const receipt = await tx.wait();
-
-      await this.prismaService.poolDeposit.update({
-        where: { id: provisionalDeposit.id },
-        data: {
-          transactionHash: receipt.transactionHash,
-          status: 'completed',
-        },
-      });
-
-      return {
-        status: 'success',
-        message: 'Deposit successful',
-        data: { transactionHash: receipt.transactionHash },
-      };
-    } catch (error: any) {
-      console.error('Error during deposit:', error);
-
-      return {
-        status: 'failed',
-        message: 'Error during deposit',
-        error: error.message,
-      };
-    }
+  deposit(poolId: number, amount: string, supabaseUserId: string) {
+    return deposit(this.stakingContract, this.prismaService, this.authService, poolId, amount, supabaseUserId);
   }
 
-  async withdraw(poolId: number, amount: string, supabaseUserId: string): Promise<CustomJsonResponse> {
-    try {
-      const convertedAmount = ethers.utils.parseUnits(amount, 18);
-      const user = await this.authService.getUserFromDatabaseById(supabaseUserId);
-
-      const stakingPool = await this.prismaService.stakingPool.findUnique({
-        where: { id: poolId },
-        select: { blockchainPoolId: true },
-      });
-
-      if (!stakingPool) {
-        return {
-          status: 'failed',
-          message: `Staking pool with ID ${poolId} not found`,
-          data: null,
-        };
-      }
-
-      const blockchainPoolId = stakingPool.blockchainPoolId;
-
-      const provisionalWithdrawal = await this.prismaService.poolWithdrawal.create({
-        data: {
-          stakingPoolId: poolId,
-          userId: user.id,
-          amountWithdrawn: parseFloat(amount),
-          status: 'pending',
-          transactionHash: '',
-        },
-      });
-
-      const tx = await this.stakingContract.withdraw(blockchainPoolId, convertedAmount);
-      const receipt = await tx.wait();
-
-      await this.prismaService.poolWithdrawal.update({
-        where: { id: provisionalWithdrawal.id },
-        data: {
-          transactionHash: receipt.transactionHash,
-          status: 'completed',
-        },
-      });
-
-      return {
-        status: 'success',
-        message: 'Withdrawal successful',
-        data: { transactionHash: receipt.transactionHash },
-      };
-    } catch (error: any) {
-      console.error('Error during withdrawal:', error);
-
-      return {
-        status: 'failed',
-        message: 'Error during withdrawal',
-        error: error.message,
-      };
-    }
+  withdraw(poolId: number, amount: string, supabaseUserId: string) {
+    return withdraw(this.stakingContract, this.prismaService, this.authService, poolId, amount, supabaseUserId);
   }
 
-
-  async claimReward(databasePoolId: number): Promise<CustomJsonResponse> {
-    try {
-      const stakingPool = await this.prismaService.stakingPool.findUnique({
-        where: { id: databasePoolId },
-        select: { blockchainPoolId: true },
-      });
-
-      if (!stakingPool) {
-        return {
-          status: "failed",
-          message: `Staking pool with ID ${databasePoolId} not found`,
-          data: null,
-        };
-      }
-
-      const tx = await this.stakingContract.claimReward(stakingPool.blockchainPoolId);
-      const receipt = await tx.wait();
-
-      return {
-        status: "success",
-        message: 'Reward claimed successfully',
-        data: { transactionHash: receipt.transactionHash },
-      };
-    } catch (error: any) {
-      return {
-        status: "failed",
-        message: 'Error claiming reward',
-        error: error.message,
-      };
-    }
+  claimReward(databasePoolId: number) {
+    return claimReward(this.stakingContract, this.prismaService, databasePoolId);
   }
 
-
-  async emergencyWithdraw(databasePoolId: number): Promise<CustomJsonResponse> {
-    try {
-      const stakingPool = await this.prismaService.stakingPool.findUnique({
-        where: { id: databasePoolId },
-        select: { blockchainPoolId: true },
-      });
-
-      const tx = await this.stakingContract.emergencyWithdraw(stakingPool?.blockchainPoolId);
-      const receipt = await tx.wait();
-
-      return {
-        status: "success",
-        message: 'Emergency withdrawal successful',
-        data: { transactionHash: receipt.transactionHash },
-      };
-    } catch (error: any) {
-      return {
-        status: "failed",
-        message: 'Error during emergency withdrawal',
-        error: error.message,
-      };
-    }
+  emergencyWithdraw(databasePoolId: number) {
+    return emergencyWithdraw(this.stakingContract, this.prismaService, databasePoolId);
   }
 
-  async getStakedBalance(address: string, databasePoolId: number): Promise<CustomJsonResponse> {
-    try {
-      const poolId = Number(databasePoolId);
-
-      if (isNaN(poolId)) {
-        return {
-          status: "failed",
-          message: `Invalid pool ID provided: ${databasePoolId}`,
-          data: null,
-        };
-      }
-
-      const stakingPool = await this.prismaService.stakingPool.findUnique({
-        where: { id: poolId },
-        select: { blockchainPoolId: true },
-      });
-
-      if (!stakingPool) {
-        return {
-          status: "failed",
-          message: `Staking pool with ID ${databasePoolId} not found`,
-          data: null,
-        };
-      }
-
-      const balance = await this.stakingContract.getStakedBalance(address, stakingPool.blockchainPoolId);
-
-      return {
-        status: "success",
-        message: 'Staked balance retrieved successfully',
-        data: { balance: balance.toString() },
-      };
-    } catch (error: any) {
-      return {
-        status: "failed",
-        message: 'Error retrieving staked balance',
-        error: error.message,
-      };
-    }
+  getStakedBalance(address: string, databasePoolId: number) {
+    return getStakedBalance(this.stakingContract, this.prismaService, address, databasePoolId);
   }
 
-  async getPendingReward(address: string, databasePoolId: any): Promise<CustomJsonResponse> {
-    try {
-      const poolId = Number(databasePoolId);
-
-      if (isNaN(poolId)) {
-        return {
-          status: "failed",
-          message: `Invalid pool ID provided: ${databasePoolId}`,
-          data: null,
-        };
-      }
-
-      const stakingPool = await this.prismaService.stakingPool.findUnique({
-        where: { id: poolId },
-        select: { blockchainPoolId: true },
-      });
-
-      if (!stakingPool) {
-        return {
-          status: "failed",
-          message: `Staking pool with ID ${poolId} not found`,
-          data: null,
-        };
-      }
-
-      const reward = await this.stakingContract.getPendingReward(address, stakingPool.blockchainPoolId);
-
-      return {
-        status: "success",
-        message: 'Pending reward retrieved successfully',
-        data: { reward: reward.toString() },
-      };
-    } catch (error: any) {
-      return {
-        status: "failed",
-        message: 'Error retrieving pending reward',
-        error: error.message,
-      };
-    }
+  getPendingReward(address: string, databasePoolId: number) {
+    return getPendingReward(this.stakingContract, this.prismaService, address, databasePoolId);
   }
 
-  async getTotalStaked(databasePoolId: any): Promise<CustomJsonResponse> {
-    try {
-      const poolId = Number(databasePoolId);
-
-      if (isNaN(poolId)) {
-        return {
-          status: "failed",
-          message: `Invalid pool ID provided: ${databasePoolId}`,
-          data: null,
-        };
-      }
-
-      const stakingPool = await this.prismaService.stakingPool.findUnique({
-        where: { id: poolId },
-        select: { blockchainPoolId: true },
-      });
-
-      if (!stakingPool) {
-        return {
-          status: "failed",
-          message: `Staking pool with ID ${poolId} not found`,
-          data: null,
-        };
-      }
-
-      const totalStaked = await this.stakingContract.getTotalStaked(stakingPool.blockchainPoolId);
-
-      return {
-        status: "success",
-        message: 'Total staked amount retrieved successfully',
-        data: { totalStaked: totalStaked.toString() },
-      };
-    } catch (error: any) {
-      return {
-        status: "failed",
-        message: 'Error retrieving total staked amount',
-        error: error.message,
-      };
-    }
+  getTotalStaked(databasePoolId: number) {
+    return getTotalStaked(this.stakingContract, this.prismaService, databasePoolId);
   }
-
 }
